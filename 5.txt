@@ -1,0 +1,13 @@
+#!/bin/bash
+
+touch "file with spaces.txt"    
+touch -- "-start-with-dash.txt" 
+touch "file&symbol.txt"        
+touch "question?.txt"      
+touch "'quoted'.txt"    
+
+mkdir -p "dir with spaces/sub\\dir"  
+mkdir "weird#dir"           
+
+echo "Созданы следующие проблемные файлы и директории:"
+ls -l
