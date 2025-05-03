@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Проверка аргументов
+if [ $# -ne 1 ]; then
+    echo "Использование: $0 <PID>"
+    echo "Пример: $0 1234"
+    exit 1
+fi
+
+PID=$1
+
+# Проверка существования процесса
+if ! ps -p "$PID" > /dev/null; then
+    echo "Ошибка: процесс с PID $PID не найден"
+    exit 1
+fi
+
+# Очистка лог-файла и добавление заголовков
+LOG_FILE="memory_usage.csv"
+echo "Time,UsedMem(MB),UsedSwap(MB),VIRT(MB),RES(MB),%MEM,ProcessName" > "$LOG_FILE"
+
+echo "Мониторинг памяти процесса с PID: $PID ($(ps -p "$PID" -o comm=))"
+echo "Данные будут записываться в: $LOG_FILE"
+echo "Нажмите Ctrl+C для остановки"
+
+# Основной цикл мониторинга
+while kill -0 "$PID" 2>/dev/null; do
+    # Получение системной информации о памяти
+    mem_info=$(free -m | awk '/Mem:/ {print $3}')
+    swap_info=$(free -m | awk '/Swap:/ {print $3}')
+
+    # Получение данных процесса
+    process_info=$(top -b -n 1 -p "$PID" | awk -v pid="$PID" '
+        $1 == pid {
+            printf "%.0f,%.0f,%.1f,%s", $5/1024, $6/1024, $10, $12
+        }
+    ')
+
+    # Запись данных в лог
+    echo "$(date '+%H:%M:%S'),$mem_info,$swap_info,$process_info" >> "$LOG_FILE"
+
+    sleep 2
+done
+
+echo "Мониторинг завершен. Процесс $PID завершился."
+echo "Итоговые данные сохранены в $LOG_FILE"
